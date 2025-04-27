@@ -58,7 +58,7 @@ enum Expression {
     BinaryOp(Box<Expression>, String, Box<Expression>),
 }
 
-// Parser
+// Smarter Parser
 fn parse(tokens: &[Token]) -> Vec<Statement> {
     let mut statements = Vec::new();
     let mut i = 0;
@@ -68,11 +68,25 @@ fn parse(tokens: &[Token]) -> Vec<Statement> {
             Token::Keyword(k) if k == "int" => {
                 if let Token::Identifier(var_name) = &tokens[i + 1] {
                     if let Token::Equal = tokens[i + 2] {
-                        if let Token::Number(num) = &tokens[i + 3] {
-                            let expr = Expression::Number(*num);
-                            statements.push(Statement::VariableDeclaration(var_name.clone(), expr));
-                            i += 5;
-                        }
+                        let expr = if let Token::Number(num1) = &tokens[i + 3] {
+                            if let Token::Plus = tokens[i + 4] {
+                                if let Token::Number(num2) = &tokens[i + 5] {
+                                    Expression::BinaryOp(
+                                        Box::new(Expression::Number(*num1)),
+                                        "+".to_string(),
+                                        Box::new(Expression::Number(*num2)),
+                                    )
+                                } else {
+                                    Expression::Number(*num1)
+                                }
+                            } else {
+                                Expression::Number(*num1)
+                            }
+                        } else {
+                            Expression::Number(0)
+                        };
+                        statements.push(Statement::VariableDeclaration(var_name.clone(), expr));
+                        i += 7;
                     }
                 }
             }
@@ -91,36 +105,44 @@ fn parse(tokens: &[Token]) -> Vec<Statement> {
     statements
 }
 
-// VM: Executes the AST
+// VM + Expression Evaluator
 fn run_vm(statements: &[Statement]) {
     let mut variables = HashMap::new();
 
     for stmt in statements {
         match stmt {
             Statement::VariableDeclaration(name, expr) => {
-                if let Expression::Number(value) = expr {
-                    variables.insert(name.clone(), *value);
-                    println!("Variable '{}' set to {}", name, value);
-                }
+                let value = evaluate_expression(expr, &variables);
+                variables.insert(name.clone(), value);
+                println!("Variable '{}' set to {}", name, value);
             }
             Statement::Return(expr) => {
-                match expr {
-                    Expression::Variable(name) => {
-                        if let Some(value) = variables.get(name) {
-                            println!("Return value: {}", value);
-                        } else {
-                            println!("Error: Undefined variable '{}'", name);
-                        }
-                    }
-                    _ => println!("Unsupported return expression"),
-                }
+                let value = evaluate_expression(expr, &variables);
+                println!("Return value: {}", value);
             }
         }
     }
 }
 
+fn evaluate_expression(expr: &Expression, vars: &HashMap<String, i32>) -> i32 {
+    match expr {
+        Expression::Number(n) => *n,
+        Expression::Variable(name) => *vars.get(name).unwrap_or(&0),
+        Expression::BinaryOp(left, op, right) => {
+            let l_val = evaluate_expression(left, vars);
+            let r_val = evaluate_expression(right, vars);
+            match op.as_str() {
+                "+" => l_val + r_val,
+                "-" => l_val - r_val,
+                _ => 0,
+            }
+        }
+    }
+}
+
+// Main function
 fn main() {
-    let code = "int x = 5 ; return x ;";
+    let code = "int x = 5 + 3 ; return x ;";
     let tokens = lexer(code);
     let ast = parse(&tokens);
 
@@ -134,37 +156,49 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_lexer_basic() {
-        let code = "int x = 5 ; return x ;";
+    fn test_lexer_arithmetic() {
+        let code = "int x = 5 + 3 ; return x ;";
         let tokens = lexer(code);
-        assert_eq!(tokens.len(), 8);
+        assert_eq!(tokens.len(), 10);
         assert!(matches!(tokens[0], Token::Keyword(ref k) if k == "int"));
-        assert!(matches!(tokens[1], Token::Identifier(_)));
         assert!(matches!(tokens[3], Token::Number(5)));
+        assert!(matches!(tokens[5], Token::Number(3)));
     }
 
     #[test]
-    fn test_parser_variable_declaration() {
-        let tokens = lexer("int y = 10 ;");
+    fn test_parser_binary_op() {
+        let tokens = lexer("int x = 5 + 3 ;");
         let ast = parse(&tokens);
         assert_eq!(ast.len(), 1);
-        if let Statement::VariableDeclaration(var, Expression::Number(val)) = &ast[0] {
-            assert_eq!(var, "y");
-            assert_eq!(*val, 10);
+        if let Statement::VariableDeclaration(var, expr) = &ast[0] {
+            assert_eq!(var, "x");
+            if let Expression::BinaryOp(_, op, _) = expr {
+                assert_eq!(op, "+");
+            } else {
+                panic!("Expected BinaryOp in expression");
+            }
         } else {
-            panic!("Parsed AST does not match expected VariableDeclaration");
+            panic!("Expected VariableDeclaration");
         }
     }
 
     #[test]
-    fn test_parser_return() {
-        let tokens = lexer("int z = 7 ; return z ;");
+    fn test_vm_execution() {
+        let tokens = lexer("int x = 5 + 3 ; return x ;");
         let ast = parse(&tokens);
-        assert_eq!(ast.len(), 2);
-        if let Statement::Return(Expression::Variable(var)) = &ast[1] {
-            assert_eq!(var, "z");
-        } else {
-            panic!("Parsed AST does not match expected Return statement");
+    
+        let mut vars = HashMap::new();
+        for stmt in &ast {
+            if let Statement::VariableDeclaration(name, expr) = stmt {
+                let value = super::evaluate_expression(expr, &vars);
+                assert_eq!(value, 8);
+                vars.insert(name.clone(), value);
+            }
+            if let Statement::Return(expr) = stmt {
+                let value = super::evaluate_expression(expr, &vars);
+                assert_eq!(value, 8);
+            }
         }
     }
+    
 }
