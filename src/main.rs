@@ -58,14 +58,17 @@ enum Expression {
     BinaryOp(Box<Expression>, String, Box<Expression>),
 }
 
-// Smarter Parser
-fn parse(tokens: &[Token]) -> Vec<Statement> {
+// Smarter Parser with Error Handling (Bonus Feature)
+fn parse(tokens: &[Token]) -> Result<Vec<Statement>, String> {
     let mut statements = Vec::new();
     let mut i = 0;
 
     while i < tokens.len() {
         match &tokens[i] {
             Token::Keyword(k) if k == "int" => {
+                if i + 6 >= tokens.len() {
+                    return Err(format!("Incomplete variable declaration at position {}", i));
+                }
                 if let Token::Identifier(var_name) = &tokens[i + 1] {
                     if let Token::Equal = tokens[i + 2] {
                         let expr = if let Token::Number(num1) = &tokens[i + 3] {
@@ -77,32 +80,41 @@ fn parse(tokens: &[Token]) -> Vec<Statement> {
                                         Box::new(Expression::Number(*num2)),
                                     )
                                 } else {
-                                    Expression::Number(*num1)
+                                    return Err(format!("Expected number after '+' at position {}", i + 5));
                                 }
                             } else {
                                 Expression::Number(*num1)
                             }
                         } else {
-                            Expression::Number(0)
+                            return Err(format!("Expected number after '=' at position {}", i + 3));
                         };
                         statements.push(Statement::VariableDeclaration(var_name.clone(), expr));
                         i += 7;
+                    } else {
+                        return Err(format!("Expected '=' after identifier at position {}", i + 2));
                     }
+                } else {
+                    return Err(format!("Expected identifier after 'int' at position {}", i + 1));
                 }
             }
             Token::Keyword(k) if k == "return" => {
+                if i + 2 >= tokens.len() {
+                    return Err(format!("Incomplete return statement at position {}", i));
+                }
                 if let Token::Identifier(var_name) = &tokens[i + 1] {
                     statements.push(Statement::Return(Expression::Variable(var_name.clone())));
                     i += 3;
+                } else {
+                    return Err(format!("Expected identifier after 'return' at position {}", i + 1));
                 }
             }
             _ => {
-                i += 1;
+                return Err(format!("Unexpected token at position {}", i));
             }
         }
     }
 
-    statements
+    Ok(statements)
 }
 
 // VM + Expression Evaluator
@@ -144,12 +156,17 @@ fn evaluate_expression(expr: &Expression, vars: &HashMap<String, i32>) -> i32 {
 fn main() {
     let code = "int x = 5 + 3 ; return x ;";
     let tokens = lexer(code);
-    let ast = parse(&tokens);
 
-    println!("--- VM Execution ---");
-    run_vm(&ast);
+    match parse(&tokens) {
+        Ok(ast) => {
+            println!("--- VM Execution ---");
+            run_vm(&ast);
+        }
+        Err(e) => {
+            println!("Parser Error: {}", e);
+        }
+    }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -168,7 +185,7 @@ mod tests {
     #[test]
     fn test_parser_binary_op() {
         let tokens = lexer("int x = 5 + 3 ;");
-        let ast = parse(&tokens);
+        let ast = parse(&tokens).unwrap();
         assert_eq!(ast.len(), 1);
         if let Statement::VariableDeclaration(var, expr) = &ast[0] {
             assert_eq!(var, "x");
@@ -185,7 +202,7 @@ mod tests {
     #[test]
     fn test_vm_execution() {
         let tokens = lexer("int x = 5 + 3 ; return x ;");
-        let ast = parse(&tokens);
+        let ast = parse(&tokens).unwrap();
     
         let mut vars = HashMap::new();
         for stmt in &ast {
@@ -200,5 +217,4 @@ mod tests {
             }
         }
     }
-    
 }
