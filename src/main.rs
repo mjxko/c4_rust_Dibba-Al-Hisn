@@ -1,38 +1,21 @@
 use std::collections::HashMap;
 
+/// These represent different types of tokens recognized by lexer
 #[derive(Debug)]
 enum Token {
-    Identifier(String),
-    Number(i32),
-    Plus,
-    Minus,
-    Star,
-    Slash,
-    Equal,
-    LParen,
-    RParen,
-    LBrace,
-    RBrace,
-    Semicolon,
-    Keyword(String),
+    Identifier(String),Number(i32),Plus,Minus,Star,Slash,Equal,LParen,RParen,LBrace,RBrace,Semicolon, Keyword(String),
 }
 
-// Lexer
+// This is our lexer function -> breaks code into tokens such as keywords, numbers, and so on...
 fn lexer(input: &str) -> Vec<Token> {
     let mut tokens = Vec::new();
-
     for word in input.split_whitespace() {
         match word {
-            "+" => tokens.push(Token::Plus),
-            "-" => tokens.push(Token::Minus),
-            "*" => tokens.push(Token::Star),
-            "/" => tokens.push(Token::Slash),
-            "=" => tokens.push(Token::Equal),
-            "(" => tokens.push(Token::LParen),
-            ")" => tokens.push(Token::RParen),
-            "{" => tokens.push(Token::LBrace),
-            "}" => tokens.push(Token::RBrace),
-            ";" => tokens.push(Token::Semicolon),
+            "+" => tokens.push(Token::Plus),"-" => tokens.push(Token::Minus), // for + and -
+            "*" => tokens.push(Token::Star),"/" => tokens.push(Token::Slash), // for * and /
+            "=" => tokens.push(Token::Equal),";" => tokens.push(Token::Semicolon), // for = and ;
+            "(" => tokens.push(Token::LParen),")" => tokens.push(Token::RParen), // for ) and ( 
+            "{" => tokens.push(Token::LBrace),"}" => tokens.push(Token::RBrace), // for } and { 
             "int" | "return" => tokens.push(Token::Keyword(word.to_string())),
             num if num.chars().all(|c| c.is_digit(10)) => {
                 tokens.push(Token::Number(num.parse().unwrap()))
@@ -40,17 +23,16 @@ fn lexer(input: &str) -> Vec<Token> {
             ident => tokens.push(Token::Identifier(ident.to_string())),
         }
     }
-
     tokens
 }
 
-// AST
+// abstract syntax tree statement types (AST)
 #[derive(Debug)]
 enum Statement {
     VariableDeclaration(String, Expression),
     Return(Expression),
 }
-
+// our expression types for arithmetic and variables
 #[derive(Debug)]
 enum Expression {
     Number(i32),
@@ -58,7 +40,7 @@ enum Expression {
     BinaryOp(Box<Expression>, String, Box<Expression>),
 }
 
-// Smarter Parser with Error Handling (Bonus Feature)
+// smarter Parser with better error handling (basically before error handling, if we write invalid code our parser would just ignore it)
 fn parse(tokens: &[Token]) -> Result<Vec<Statement>, String> {
     let mut statements = Vec::new();
     let mut i = 0;
@@ -75,9 +57,7 @@ fn parse(tokens: &[Token]) -> Result<Vec<Statement>, String> {
                             if let Token::Plus = tokens[i + 4] {
                                 if let Token::Number(num2) = &tokens[i + 5] {
                                     Expression::BinaryOp(
-                                        Box::new(Expression::Number(*num1)),
-                                        "+".to_string(),
-                                        Box::new(Expression::Number(*num2)),
+                                        Box::new(Expression::Number(*num1)),"+".to_string(),Box::new(Expression::Number(*num2)),
                                     )
                                 } else {
                                     return Err(format!("Expected number after '+' at position {}", i + 5));
@@ -91,25 +71,25 @@ fn parse(tokens: &[Token]) -> Result<Vec<Statement>, String> {
                         statements.push(Statement::VariableDeclaration(var_name.clone(), expr));
                         i += 7;
                     } else {
-                        return Err(format!("Expected '=' after identifier at position {}", i + 2));
+                        return Err(format!("Expected '=' after the identifier at position {}", i + 2));
                     }
                 } else {
-                    return Err(format!("Expected identifier after 'int' at position {}", i + 1));
+                    return Err(format!("Theres an expected identifier after 'int' at position {}", i + 1));
                 }
             }
             Token::Keyword(k) if k == "return" => {
                 if i + 2 >= tokens.len() {
-                    return Err(format!("Incomplete return statement at position {}", i));
+                    return Err(format!("Theres an incomplete return statement at position {}", i));
                 }
                 if let Token::Identifier(var_name) = &tokens[i + 1] {
                     statements.push(Statement::Return(Expression::Variable(var_name.clone())));
                     i += 3;
                 } else {
-                    return Err(format!("Expected identifier after 'return' at position {}", i + 1));
+                    return Err(format!("Theres an expected identifier after 'return' at position {}", i + 1));
                 }
             }
             _ => {
-                return Err(format!("Unexpected token at position {}", i));
+                return Err(format!("Theres an unexpected token at position {}", i));
             }
         }
     }
@@ -117,7 +97,7 @@ fn parse(tokens: &[Token]) -> Result<Vec<Statement>, String> {
     Ok(statements)
 }
 
-// VM + Expression Evaluator
+// Virtual Machine executor that runs the parsed AST
 fn run_vm(statements: &[Statement]) {
     let mut variables = HashMap::new();
 
@@ -136,6 +116,7 @@ fn run_vm(statements: &[Statement]) {
     }
 }
 
+// this is an evaluator for expressions (+ and -)
 fn evaluate_expression(expr: &Expression, vars: &HashMap<String, i32>) -> i32 {
     match expr {
         Expression::Number(n) => *n,
@@ -144,15 +125,15 @@ fn evaluate_expression(expr: &Expression, vars: &HashMap<String, i32>) -> i32 {
             let l_val = evaluate_expression(left, vars);
             let r_val = evaluate_expression(right, vars);
             match op.as_str() {
-                "+" => l_val + r_val,
-                "-" => l_val - r_val,
+                "+" => l_val + r_val,  // + expression
+                "-" => l_val - r_val,  // - expression 
                 _ => 0,
             }
         }
     }
 }
 
-// Main function
+// Main function that runs lexer, parser, and the VM
 fn main() {
     let code = "int x = 5 + 3 ; return x ;";
     let tokens = lexer(code);
