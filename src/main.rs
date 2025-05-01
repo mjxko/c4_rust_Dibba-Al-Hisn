@@ -1,3 +1,10 @@
+use std::env;
+use std::fs;
+use crate::lexer::Lexer;
+use crate::parser::Parser;
+use crate::vm::VM;
+
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
@@ -18,7 +25,7 @@ fn main() {
     let mut parser = Parser::new(lexer);
     parser.parse_program();
 
-    println!("\n✅ Instructions:");
+    println!("\n Instructions:");
     for inst in &parser.instructions {
         println!("{}", inst);
     }
