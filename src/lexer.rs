@@ -63,17 +63,20 @@ impl<'a> Lexer<'a> {
                     continue;
                 }
                 '0'..='9' => {
-                    let _ = self.collect_while(|ch| ch.is_ascii_digit());
-                    return Some(Token::Num);
+
+                    let num_str = self.collect_while(|ch| ch.is_ascii_digit());
+                    let val = num_str.parse::<i64>().unwrap();
+                    return Some(Token::Num(val));
                 }
                 'a'..='z' | 'A'..='Z' | '_' => {
                     let ident = self.collect_while(|ch| ch.is_ascii_alphanumeric() || ch == '_');
                     if let Some(tok) = self.keywords.get(&ident) {
                         return Some(tok.clone());
                     } else {
-                        return Some(Token::Id);
+                        return Some(Token::Id(ident));
                     }
                 }
+
                 '=' => {
                     self.advance();
                     if self.current == Some('=') {
