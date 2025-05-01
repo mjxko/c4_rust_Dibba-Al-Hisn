@@ -1,19 +1,4 @@
-// main.rs
-
-mod lexer;
-mod parser;
-mod token;
-mod vm;
-
-use std::env;
-use std::fs;
-use lexer::Lexer;
-use parser::Parser;
-use vm::{VM, OpCode};
-
 fn main() {
-    println!("Rewriting the C4 Compiler in Rust");
-
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
         eprintln!("Usage: {} <source.c>", args[0]);
@@ -31,12 +16,13 @@ fn main() {
 
     let lexer = Lexer::new(&source_code);
     let mut parser = Parser::new(lexer);
+    parser.parse_program();
 
-    println!("parsing expression:");
-    parser.parse_expression(1);
+    println!("\n✅ Instructions:");
+    for inst in &parser.instructions {
+        println!("{}", inst);
+    }
 
-    println!("running the virtual machine:");
-    let program = vec![OpCode::Imm, OpCode::Imm, OpCode::Add, OpCode::Exit];
-    let mut vm = VM::new(program);
+    let mut vm = VM::new(parser.instructions);
     vm.run();
 }
