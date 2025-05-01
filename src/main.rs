@@ -1,8 +1,13 @@
-use std::env;
-use std::fs;
+mod lexer;
+mod parser;
+mod vm;
+
 use crate::lexer::Lexer;
 use crate::parser::Parser;
 use crate::vm::VM;
+use std::env;
+use std::fs;
+
 
 
 fn main() {
