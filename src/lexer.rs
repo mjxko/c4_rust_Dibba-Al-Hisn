@@ -194,7 +194,7 @@ mod tests {
             Token::Return,
             Token::Sizeof,
             Token::While,
-            Token::Printf, // ✅ NEW
+            Token::Printf, 
             Token::Id,
             Token::Id,
             Token::Eof,
