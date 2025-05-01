@@ -2,13 +2,18 @@
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Token {
-    Num, Fun, Sys, Glo, Loc, Id,
+    Num(i64),
+    Id(String),
+    Fun, Sys, Glo, Loc,
     Char, Else, Enum, If, Int, Return, Sizeof, While,
     Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt,
     Le, Ge, Shl, Shr, Add, Sub, Mul, Div, Mod, Inc, Dec, Brak,
+    LParen, RParen, Semicolon,
+    Printf,
     Unknown(char),
     Eof,
 }
+
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Type {
