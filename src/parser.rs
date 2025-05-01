@@ -21,12 +21,12 @@ impl<'a> Parser<'a> {
     pub fn parse_expression(&mut self, min_prec: u8) {
         // Parse primary expression
         match &self.current_token {
-            Some(Token::Num) => {
-                println!("IMM Num");
+            Some(Token::Num(val)) => {
+                self.instructions.push(format!("IMM {}", val));
                 self.advance();
             }
-            Some(Token::Id) => {
-                println!("IMM Id");
+            Some(Token::Id(name)) => {
+                self.instructions.push(format!("IMM {}", name)); // placeholder
                 self.advance();
             }
             Some(t) => {
