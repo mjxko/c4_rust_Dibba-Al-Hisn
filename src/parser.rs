@@ -6,12 +6,17 @@ use crate::lexer::Lexer;
 pub struct Parser<'a> {
     pub lexer: Lexer<'a>,
     pub current_token: Option<Token>,
+    pub instructions: Vec<String>,
 }
 
 impl<'a> Parser<'a> {
     pub fn new(mut lexer: Lexer<'a>) -> Self {
         let current_token = lexer.next_token();
-        Parser { lexer, current_token }
+        Parser {
+            lexer,
+            current_token,
+            instructions: Vec::new(),
+        }
     }
 
     pub fn advance(&mut self) {
