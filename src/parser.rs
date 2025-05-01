@@ -23,6 +23,12 @@ impl<'a> Parser<'a> {
         self.current_token = self.lexer.next_token();
     }
 
+    pub fn parse_program(&mut self) {
+        while self.current_token != Some(Token::Eof) {
+            self.parse_statement();
+        }
+    }
+
     pub fn parse_expression(&mut self, min_prec: u8) {
         // Parse primary expression
         match &self.current_token {
