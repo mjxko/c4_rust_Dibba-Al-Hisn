@@ -23,6 +23,18 @@ Run all tests:
 cargo test
 ```
 
+
+## The bonus Feature is an enhanced error reporting
+this Rust version improves on out original C4 compiler by including a more precise syntax error reporting, so when an invalid statement or unexpected token is encountered then the compiler will output a detailed message such as:
+
+```
+Syntax Error: expected ';' after printf() at line 2, col 18
+```
+
+it makes debugging much easier compared to our original c4 version
+
+
+
 ## done by:
 - Mahra Almazrouei
 - Sarah Alkaabi
