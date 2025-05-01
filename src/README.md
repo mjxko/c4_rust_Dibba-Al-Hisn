@@ -9,11 +9,20 @@ performance to reimplement the compiler, ensuring equivalence to the original wh
 improving design where possible.
 
 ## How to Build & Run: 
-### Prerequisites
 - Rust (Install via [https://rust-lang.org](https://www.rust-lang.org/learn/get-started)
-- Git
 
-### Clone the Repository
+##  How to Run
 ```bash
-git clone https://github.com/mjxko/c4_rust_Dibba-Al-Hisn.git
-cd c4_rust_Dibba-Al-Hisn
+cargo build
+cargo run --path/to/source.c
+```
+
+## Tests
+Run all tests:
+```bash
+cargo test
+```
+
+## done by:
+- Mahra Almazrouei
+- Sarah Alkaabi
