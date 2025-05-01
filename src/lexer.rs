@@ -21,6 +21,7 @@ impl<'a> Lexer<'a> {
         keywords.insert("return".to_string(), Token::Return);
         keywords.insert("while".to_string(), Token::While);
         keywords.insert("sizeof".to_string(), Token::Sizeof);
+        keywords.insert("printf".to_string(), Token::Printf); 
 
         Lexer {
             input,
@@ -155,6 +156,18 @@ impl<'a> Lexer<'a> {
                     self.advance();
                     return Some(Token::Mod);
                 }
+                '(' => {
+                    self.advance();
+                    return Some(Token::LParen);
+                }
+                ')' => {
+                    self.advance();
+                    return Some(Token::RParen);
+                }
+                ';' => {
+                    self.advance();
+                    return Some(Token::Semicolon);
+                }
                 _ => {
                     self.advance();
                     return Some(Token::Unknown(c));
@@ -165,8 +178,6 @@ impl<'a> Lexer<'a> {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -174,7 +185,7 @@ mod tests {
 
     #[test]
     fn test_keywords_and_identifiers() {
-        let input = "if else int return sizeof while x y";
+        let input = "if else int return sizeof while printf x y";
         let mut lexer = Lexer::new(input);
         let expected_tokens = vec![
             Token::If,
@@ -183,6 +194,7 @@ mod tests {
             Token::Return,
             Token::Sizeof,
             Token::While,
+            Token::Printf, // ✅ NEW
             Token::Id,
             Token::Id,
             Token::Eof,
