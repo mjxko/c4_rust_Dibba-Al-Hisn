@@ -197,14 +197,32 @@ mod tests {
             Token::Return,
             Token::Sizeof,
             Token::While,
-            Token::Printf, 
-            Token::Id,
-            Token::Id,
+            Token::Printf,
+            Token::Id("x".to_string()),
+            Token::Id("y".to_string()),
             Token::Eof,
         ];
+
+        for expected in expected_tokens {
+            let token = lexer.next_token().unwrap();
+            assert_eq!(token, expected);
+        }
+    }
+
+    #[test]
+    fn test_numbers_and_ids() {
+        let input = "42 var123";
+        let mut lexer = Lexer::new(input);
+        let expected_tokens = vec![
+            Token::Num(42),
+            Token::Id("var123".to_string()),
+            Token::Eof,
+        ];
+
         for expected in expected_tokens {
             let token = lexer.next_token().unwrap();
             assert_eq!(token, expected);
         }
     }
 }
+
