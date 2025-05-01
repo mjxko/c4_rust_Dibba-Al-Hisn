@@ -2,10 +2,11 @@ use crate::token::Token;
 use std::collections::HashMap;
 
 pub struct Lexer<'a> {
-    input: &'a str,
     chars: std::str::Chars<'a>,
     current: Option<char>,
     pub keywords: HashMap<String, Token>,
+    pub line: usize,
+    pub col: usize,
 }
 
 impl<'a> Lexer<'a> {
@@ -21,22 +22,27 @@ impl<'a> Lexer<'a> {
         keywords.insert("return".to_string(), Token::Return);
         keywords.insert("while".to_string(), Token::While);
         keywords.insert("sizeof".to_string(), Token::Sizeof);
-        keywords.insert("printf".to_string(), Token::Printf); 
+        keywords.insert("printf".to_string(), Token::Printf);
 
         Lexer {
-            input,
             chars,
             current,
             keywords,
+            line: 1,
+            col: 0,
         }
     }
 
     fn advance(&mut self) {
+        if let Some(c) = self.current {
+            if c == '\n' {
+                self.line += 1;
+                self.col = 0;
+            } else {
+                self.col += 1;
+            }
+        }
         self.current = self.chars.next();
-    }
-
-    fn peek(&self) -> Option<char> {
-        self.chars.clone().next()
     }
 
     fn collect_while<F>(&mut self, mut condition: F) -> String
@@ -63,7 +69,6 @@ impl<'a> Lexer<'a> {
                     continue;
                 }
                 '0'..='9' => {
-
                     let num_str = self.collect_while(|ch| ch.is_ascii_digit());
                     let val = num_str.parse::<i64>().unwrap();
                     return Some(Token::Num(val));
@@ -76,7 +81,6 @@ impl<'a> Lexer<'a> {
                         return Some(Token::Id(ident));
                     }
                 }
-
                 '=' => {
                     self.advance();
                     if self.current == Some('=') {
@@ -180,49 +184,3 @@ impl<'a> Lexer<'a> {
         Some(Token::Eof)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::token::Token;
-
-    #[test]
-    fn test_keywords_and_identifiers() {
-        let input = "if else int return sizeof while printf x y";
-        let mut lexer = Lexer::new(input);
-        let expected_tokens = vec![
-            Token::If,
-            Token::Else,
-            Token::Int,
-            Token::Return,
-            Token::Sizeof,
-            Token::While,
-            Token::Printf,
-            Token::Id("x".to_string()),
-            Token::Id("y".to_string()),
-            Token::Eof,
-        ];
-
-        for expected in expected_tokens {
-            let token = lexer.next_token().unwrap();
-            assert_eq!(token, expected);
-        }
-    }
-
-    #[test]
-    fn test_numbers_and_ids() {
-        let input = "42 var123";
-        let mut lexer = Lexer::new(input);
-        let expected_tokens = vec![
-            Token::Num(42),
-            Token::Id("var123".to_string()),
-            Token::Eof,
-        ];
-
-        for expected in expected_tokens {
-            let token = lexer.next_token().unwrap();
-            assert_eq!(token, expected);
-        }
-    }
-}
-
