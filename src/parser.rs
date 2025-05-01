@@ -20,16 +20,14 @@ impl<'a> Parser<'a> {
 
     pub fn parse_expression(&mut self, min_prec: u8) {
         // Parse primary expression
-        let mut lhs = match &self.current_token {
+        match &self.current_token {
             Some(Token::Num) => {
-                println!("Num");
+                println!("IMM Num");
                 self.advance();
-                "Num"
             }
             Some(Token::Id) => {
-                println!("Id");
+                println!("IMM Id");
                 self.advance();
-                "Id"
             }
             Some(t) => {
                 println!("Unexpected token: {:?}", t);
@@ -37,7 +35,7 @@ impl<'a> Parser<'a> {
                 return;
             }
             None => return,
-        };
+        }
 
         // Precedence climbing
         while let Some(op) = &self.current_token {
@@ -46,9 +44,60 @@ impl<'a> Parser<'a> {
                 break;
             }
 
+            let operator = op.clone();
             println!("Operator: {:?} (prec {})", op, prec);
             self.advance();
             self.parse_expression(prec + 1);
+
+            match operator {
+                Token::Add => println!("ADD"),
+                Token::Sub => println!("SUB"),
+                Token::Mul => println!("MUL"),
+                Token::Div => println!("DIV"),
+                Token::Mod => println!("MOD"),
+                _ => println!("Unknown binary operator"),
+            }
+        }
+    }
+
+    pub fn parse_statement(&mut self) {
+        if let Some(Token::Printf) = self.current_token {
+            println!("Found printf");
+            self.advance(); // move past 'printf'
+
+            if self.current_token != Some(Token::LParen) {
+                panic!("Expected '(' after printf");
+            }
+            self.advance(); // skip '('
+
+            println!("Parsing expression inside printf:");
+            self.parse_expression(1); // parse inside printf
+
+            println!("PRTF"); // simulate instruction for print
+
+            if self.current_token != Some(Token::RParen) {
+                panic!("Expected ')' after printf");
+            }
+            self.advance(); // skip ')'
+
+            if self.current_token != Some(Token::Semicolon) {
+                panic!("Expected ';' after printf()");
+            }
+            self.advance(); // skip ';'
+        } else if let Some(Token::Return) = self.current_token {
+            println!("Found return");
+            self.advance(); // move past 'return'
+
+            self.parse_expression(1); // parse return expression
+
+            println!("LEV"); // simulate return instruction
+
+            if self.current_token != Some(Token::Semicolon) {
+                panic!("Expected ';' after return");
+            }
+            self.advance(); // skip ';'
+        } else {
+            panic!("Unsupported statement: {:?}", self.current_token);
         }
     }
 }
@@ -76,10 +125,12 @@ mod tests {
     use crate::lexer::Lexer;
 
     #[test]
-    fn test_parse_expression_with_addition() {
-        let input = "a + b * c";
+    fn test_printf_and_return() {
+        let input = "printf(2 + 3); return 0;";
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
-        parser.parse_expression(1);
+
+        parser.parse_statement(); // should handle printf
+        parser.parse_statement(); // should handle return
     }
 }
