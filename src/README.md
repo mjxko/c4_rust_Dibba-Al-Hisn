@@ -9,7 +9,7 @@ performance to reimplement the compiler, ensuring equivalence to the original wh
 improving design where possible.
 
 ## How to Build & Run: 
-- Rust (Install via [https://rust-lang.org](https://www.rust-lang.org/learn/get-started)
+- Rust (Install via [https://rust-lang.org](https://www.rust-lang.org/learn/get-started) )
 
 ##  How to Run
 ```bash
