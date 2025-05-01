@@ -152,4 +152,15 @@ mod tests {
         parser.parse_statement(); // should handle printf
         parser.parse_statement(); // should handle return
     }
+
+    #[test]
+    #[should_panic(expected = "Syntax Error")]
+    fn test_error_reporting_missing_paren() {
+        let input = "printf(2 + 3;";
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        parser.parse_statement(); // should panic here
+    }
 }
+
+
