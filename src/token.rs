@@ -1,166 +1,73 @@
-use crate::token::Token;
-use std::collections::HashMap;
+// token.rs
 
-pub struct Lexer<'a> {
-    input: &'a str,
-    chars: std::str::Chars<'a>,
-    current: Option<char>,
-    pub keywords: HashMap<String, Token>,
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Token {
+    Num, Fun, Sys, Glo, Loc, Id,
+    Char, Else, Enum, If, Int, Return, Sizeof, While,
+    Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt,
+    Le, Ge, Shl, Shr, Add, Sub, Mul, Div, Mod, Inc, Dec, Brak,
+    Unknown(char),
+    Eof,
 }
 
-impl<'a> Lexer<'a> {
-    pub fn new(input: &'a str) -> Self {
-        let mut chars = input.chars();
-        let current = chars.next();
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Type {
+    Char,
+    Int,
+    Ptr,
+}
 
-        let mut keywords = HashMap::new();
-        keywords.insert("if".to_string(), Token::If);
-        keywords.insert("else".to_string(), Token::Else);
-        keywords.insert("int".to_string(), Token::Int);
-        keywords.insert("char".to_string(), Token::Char);
-        keywords.insert("return".to_string(), Token::Return);
-        keywords.insert("while".to_string(), Token::While);
-        keywords.insert("sizeof".to_string(), Token::Sizeof);
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Class {
+    Num,
+    Fun,
+    Sys,
+    Glo,
+    Loc,
+    None,
+}
 
-        Lexer {
-            input,
-            chars,
-            current,
-            keywords,
-        }
-    }
-
-    fn advance(&mut self) {
-        self.current = self.chars.next();
-    }
-
-    fn peek(&self) -> Option<char> {
-        self.chars.clone().next()
-    }
-
-    fn collect_while<F>(&mut self, mut condition: F) -> String
-    where
-        F: FnMut(char) -> bool,
-    {
-        let mut result = String::new();
-        while let Some(c) = self.current {
-            if condition(c) {
-                result.push(c);
-                self.advance();
-            } else {
-                break;
-            }
-        }
-        result
-    }
-
-    pub fn next_token(&mut self) -> Option<Token> {
-        while let Some(c) = self.current {
-            match c {
-                ' ' | '\n' | '\r' | '\t' => {
-                    self.advance();
-                    continue;
-                }
-                '0'..='9' => {
-                    let _ = self.collect_while(|ch| ch.is_ascii_digit());
-                    return Some(Token::Num);
-                }
-                'a'..='z' | 'A'..='Z' | '_' => {
-                    let ident = self.collect_while(|ch| ch.is_ascii_alphanumeric() || ch == '_');
-                    if let Some(tok) = self.keywords.get(&ident) {
-                        return Some(tok.clone());
-                    } else {
-                        return Some(Token::Id);
-                    }
-                }
-                '=' => {
-                    self.advance();
-                    if self.current == Some('=') {
-                        self.advance();
-                        return Some(Token::Eq);
-                    }
-                    return Some(Token::Assign);
-                }
-                '!' => {
-                    self.advance();
-                    if self.current == Some('=') {
-                        self.advance();
-                        return Some(Token::Ne);
-                    }
-                    return Some(Token::Unknown('!'));
-                }
-                '<' => {
-                    self.advance();
-                    if self.current == Some('=') {
-                        self.advance();
-                        return Some(Token::Le);
-                    } else if self.current == Some('<') {
-                        self.advance();
-                        return Some(Token::Shl);
-                    }
-                    return Some(Token::Lt);
-                }
-                '>' => {
-                    self.advance();
-                    if self.current == Some('=') {
-                        self.advance();
-                        return Some(Token::Ge);
-                    } else if self.current == Some('>') {
-                        self.advance();
-                        return Some(Token::Shr);
-                    }
-                    return Some(Token::Gt);
-                }
-                '|' => {
-                    self.advance();
-                    if self.current == Some('|') {
-                        self.advance();
-                        return Some(Token::Lor);
-                    }
-                    return Some(Token::Or);
-                }
-                '&' => {
-                    self.advance();
-                    if self.current == Some('&') {
-                        self.advance();
-                        return Some(Token::Lan);
-                    }
-                    return Some(Token::And);
-                }
-                '+' => {
-                    self.advance();
-                    if self.current == Some('+') {
-                        self.advance();
-                        return Some(Token::Inc);
-                    }
-                    return Some(Token::Add);
-                }
-                '-' => {
-                    self.advance();
-                    if self.current == Some('-') {
-                        self.advance();
-                        return Some(Token::Dec);
-                    }
-                    return Some(Token::Sub);
-                }
-                '*' => {
-                    self.advance();
-                    return Some(Token::Mul);
-                }
-                '/' => {
-                    self.advance();
-                    return Some(Token::Div);
-                }
-                '%' => {
-                    self.advance();
-                    return Some(Token::Mod);
-                }
-                _ => {
-                    self.advance();
-                    return Some(Token::Unknown(c));
-                }
-            }
-        }
-        Some(Token::Eof)
+pub fn token_name(token: &Token) -> &'static str {
+    use Token::*;
+    match token {
+        Num => "Num",
+        Fun => "Fun",
+        Sys => "Sys",
+        Glo => "Glo",
+        Loc => "Loc",
+        Id => "Id",
+        Char => "Char",
+        Else => "Else",
+        Enum => "Enum",
+        If => "If",
+        Int => "Int",
+        Return => "Return",
+        Sizeof => "Sizeof",
+        While => "While",
+        Assign => "=",
+        Cond => "?",
+        Lor => "||",
+        Lan => "&&",
+        Or => "|",
+        Xor => "^",
+        And => "&",
+        Eq => "==",
+        Ne => "!=",
+        Lt => "<",
+        Gt => ">",
+        Le => "<=",
+        Ge => ">=",
+        Shl => "<<",
+        Shr => ">>",
+        Add => "+",
+        Sub => "-",
+        Mul => "*",
+        Div => "/",
+        Mod => "%",
+        Inc => "++",
+        Dec => "--",
+        Brak => "[",
+        Unknown(_) => "Unknown",
+        Eof => "EOF",
     }
 }
