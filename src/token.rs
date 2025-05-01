@@ -1,59 +1,159 @@
 use crate::token::Token;
+use std::collections::HashMap;
 
 pub struct Lexer<'a> {
     input: &'a str,
     chars: std::str::Chars<'a>,
     current: Option<char>,
+    pub keywords: HashMap<String, Token>,
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(input: &'a str) -> Self {
         let mut chars = input.chars();
         let current = chars.next();
-        Lexer { input, chars, current }
+
+        let mut keywords = HashMap::new();
+        keywords.insert("if".to_string(), Token::If);
+        keywords.insert("else".to_string(), Token::Else);
+        keywords.insert("int".to_string(), Token::Int);
+        keywords.insert("char".to_string(), Token::Char);
+        keywords.insert("return".to_string(), Token::Return);
+        keywords.insert("while".to_string(), Token::While);
+        keywords.insert("sizeof".to_string(), Token::Sizeof);
+
+        Lexer {
+            input,
+            chars,
+            current,
+            keywords,
+        }
     }
 
     fn advance(&mut self) {
         self.current = self.chars.next();
     }
 
+    fn peek(&self) -> Option<char> {
+        self.chars.clone().next()
+    }
+
+    fn collect_while<F>(&mut self, mut condition: F) -> String
+    where
+        F: FnMut(char) -> bool,
+    {
+        let mut result = String::new();
+        while let Some(c) = self.current {
+            if condition(c) {
+                result.push(c);
+                self.advance();
+            } else {
+                break;
+            }
+        }
+        result
+    }
+
     pub fn next_token(&mut self) -> Option<Token> {
         while let Some(c) = self.current {
             match c {
-                // doesnt count whitespaces
                 ' ' | '\n' | '\r' | '\t' => {
                     self.advance();
                     continue;
                 }
-                // any number
                 '0'..='9' => {
-                    self.advance();
+                    let _ = self.collect_while(|ch| ch.is_ascii_digit());
                     return Some(Token::Num);
                 }
-                // any identifier 
                 'a'..='z' | 'A'..='Z' | '_' => {
-                    self.advance();
-                    return Some(Token::Id);
+                    let ident = self.collect_while(|ch| ch.is_ascii_alphanumeric() || ch == '_');
+                    if let Some(tok) = self.keywords.get(&ident) {
+                        return Some(tok.clone());
+                    } else {
+                        return Some(Token::Id);
+                    }
                 }
-                '+' => { // for addition
+                '=' => {
                     self.advance();
+                    if self.current == Some('=') {
+                        self.advance();
+                        return Some(Token::Eq);
+                    }
+                    return Some(Token::Assign);
+                }
+                '!' => {
+                    self.advance();
+                    if self.current == Some('=') {
+                        self.advance();
+                        return Some(Token::Ne);
+                    }
+                    return Some(Token::Unknown('!'));
+                }
+                '<' => {
+                    self.advance();
+                    if self.current == Some('=') {
+                        self.advance();
+                        return Some(Token::Le);
+                    } else if self.current == Some('<') {
+                        self.advance();
+                        return Some(Token::Shl);
+                    }
+                    return Some(Token::Lt);
+                }
+                '>' => {
+                    self.advance();
+                    if self.current == Some('=') {
+                        self.advance();
+                        return Some(Token::Ge);
+                    } else if self.current == Some('>') {
+                        self.advance();
+                        return Some(Token::Shr);
+                    }
+                    return Some(Token::Gt);
+                }
+                '|' => {
+                    self.advance();
+                    if self.current == Some('|') {
+                        self.advance();
+                        return Some(Token::Lor);
+                    }
+                    return Some(Token::Or);
+                }
+                '&' => {
+                    self.advance();
+                    if self.current == Some('&') {
+                        self.advance();
+                        return Some(Token::Lan);
+                    }
+                    return Some(Token::And);
+                }
+                '+' => {
+                    self.advance();
+                    if self.current == Some('+') {
+                        self.advance();
+                        return Some(Token::Inc);
+                    }
                     return Some(Token::Add);
                 }
-                '-' => { // for subtraction
+                '-' => {
                     self.advance();
+                    if self.current == Some('-') {
+                        self.advance();
+                        return Some(Token::Dec);
+                    }
                     return Some(Token::Sub);
                 }
-                '*' => { // for multiplication
+                '*' => {
                     self.advance();
                     return Some(Token::Mul);
                 }
-                '/' => { // for division
+                '/' => {
                     self.advance();
                     return Some(Token::Div);
                 }
-                '=' => { // for equal sign
+                '%' => {
                     self.advance();
-                    return Some(Token::Assign);
+                    return Some(Token::Mod);
                 }
                 _ => {
                     self.advance();
@@ -61,7 +161,6 @@ impl<'a> Lexer<'a> {
                 }
             }
         }
-
         Some(Token::Eof)
     }
 }
